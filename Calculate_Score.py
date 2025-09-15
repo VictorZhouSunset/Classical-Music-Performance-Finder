@@ -31,13 +31,18 @@ def calculate_total_and_divergence_score(group):
 
 def get_recommendation(df):
     """
-    From the total_score column, pick the highest score and return this score and the corresponding video_id.
+    Get video recommendations based on highest total score and most polarized video with highest product score.
     
     Args:
-        df (pandas.DataFrame): DataFrame containing video_id, total_score, polarization_score_with_pseudo_count columns
+        df (pandas.DataFrame): DataFrame containing video_id, total_score, polarization_score_with_pseudo_count, and std_deviation columns
         
     Returns:
-        tuple: (video_id, total_score) of the video with the highest total score
+        tuple: (best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation)
+            - best_video_id: video_id with the highest total score
+            - best_score: the highest total score value
+            - most_polarized_video_id: video_id from top 3 polarized videos with highest (polarization_score * total_score) product
+            - most_polarized_polarization_score: polarization score of the most polarized video
+            - most_polarized_std_deviation: standard deviation of the most polarized video
     """
     if df.empty:
         return None, None
