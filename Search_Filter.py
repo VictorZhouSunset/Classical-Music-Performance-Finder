@@ -1,9 +1,6 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import os
-import dotenv
-import pandas as pd
-from utils import iso_to_hhmmss, initialize_youtube_api, is_performance_video, save_results_to_csv
+from utils import iso_to_hhmmss, initialize_youtube_api, is_performance_video, save_results_to_csv, preprocess_text, detect_language
 from utils import EXCLUDE_WORDS
 
 youtube = initialize_youtube_api()
@@ -109,14 +106,22 @@ def search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=N
                 print(f"Error Details: Maybe the comments of the video are turned off")
             comments = []
         for comment in comments:
+            clean_text = preprocess_text(comment["text"])
+            language = detect_language(clean_text)
             video_comments_results.append({
                 "video_id": video_id,
                 "comment_id": comment["comment_id"],
                 "author": comment["author"],
                 "text": comment["text"],
+                "clean_text": clean_text,
+                "language": language,
                 "like_count": comment["like_count"]
             })
     return video_general_results, video_comments_results, video_with_comments
+
+
+    
+    # 4. Perform the sentiment analysis
 
 def main():
     """
@@ -124,18 +129,15 @@ def main():
     """
     search_query = "Mozart Violin Sonata in E minor"
     video_general_results, video_comments_results, video_with_comments = search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=65)
-    # fieldnames, see func search_and_filter
-    video_fieldnames = ['video_id', 'title', 'duration', 'view_count', 'like_count', 'comment_count']
-    comment_fieldnames = ['video_id', 'comment_id', 'author', 'text', 'like_count']
     filename_general = f"{search_query.replace(' ', '_')}_general_results.csv"
     filename_comments = f"{search_query.replace(' ', '_')}_comments_results.csv"
     # save results to csv for both video and comment
     if video_general_results:
-        save_results_to_csv(video_general_results, filename_general, video_fieldnames)
+        save_results_to_csv(video_general_results, filename_general)
     else:
         print("No videos found.")
     if video_comments_results:
-        save_results_to_csv(video_comments_results, filename_comments, comment_fieldnames)
+        save_results_to_csv(video_comments_results, filename_comments)
     else:
         print("No video comments found.")
     # print summary

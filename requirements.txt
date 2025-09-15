@@ -1,0 +1,8 @@
+pandas
+numpy
+transformers
+torch
+python-dotenv
+google-api-python-client
+beautifulsoup4
+langdetect
