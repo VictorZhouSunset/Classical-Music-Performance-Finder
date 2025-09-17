@@ -75,7 +75,8 @@ class PerformanceAnalyzer:
         
         # 4. Get the recommendations
         best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation = get_recommendation(df_video_scores_results)
-        print(f"Best video ID: {best_video_id}, Best score: {best_score}, Most polarized video ID: {most_polarized_video_id}, Most polarized polarization score: {most_polarized_polarization_score}, Most polarized std deviation: {most_polarized_std_deviation}")
+        if verbose:
+            print(f"Best video ID: {best_video_id}, Best score: {best_score}, Most polarized video ID: {most_polarized_video_id}, Most polarized polarization score: {most_polarized_polarization_score}, Most polarized std deviation: {most_polarized_std_deviation}")
         
         return best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation
 
@@ -100,7 +101,6 @@ if __name__ == "__main__":
     dotenv.load_dotenv()
     api_key = os.getenv("YOUTUBE_API_KEY")
     analyzer = PerformanceAnalyzer(api_key)
-    print(f"Searching for {args.query} ......")
     if args.verbose:
         print(f"Verbose mode enabled, will save the intermediate results to csv files")
     best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation = analyzer.get_recommendations(args.query, args.verbose)

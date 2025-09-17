@@ -1,5 +1,5 @@
 from googleapiclient.errors import HttpError
-from utils import iso_to_hhmmss, initialize_youtube_api, is_performance_video, save_results_to_csv, preprocess_text, detect_language
+from utils import iso_to_hhmmss, initialize_youtube_api, is_performance_video, save_results_to_csv, preprocess_text, detect_language, video_how_relevant
 import pandas as pd
 
 
@@ -75,6 +75,9 @@ def search_and_filter(search_query, youtube, num_candidates=50, min_duration_in_
     for video in v_response.get("items", []):
         video_id = video["id"]
         snippet = video.get("snippet", {})
+        video_title = snippet.get('title', 'N/A')
+        # relevance_score = video_how_relevant(video_title, search_query, verbose=verbose)
+        relevance_score = 1
         statistics = video.get("statistics", {})
         contentDetails = video.get("contentDetails", {})
         duration = iso_to_hhmmss(contentDetails.get('duration', 'PT0S'))
@@ -85,11 +88,12 @@ def search_and_filter(search_query, youtube, num_candidates=50, min_duration_in_
             continue
         video_general_results.append({
             "video_id": video["id"],
-            "title": snippet.get('title', 'N/A'),
+            "title": video_title,
             "duration": duration,
             "view_count": statistics.get('viewCount', 'N/A'),
             "like_count": statistics.get('likeCount', 'N/A'),
             "comment_count": statistics.get('commentCount', 'N/A'),
+            "relevance_score": relevance_score
         })
         # Fetch the comments
         try:
@@ -116,7 +120,8 @@ def search_and_filter(search_query, youtube, num_candidates=50, min_duration_in_
                 "text": comment["text"],
                 "clean_text": clean_text,
                 "language": language,
-                "like_count": comment["like_count"]
+                "like_count": comment["like_count"],
+                "relevance_score": relevance_score
             })
     return pd.DataFrame(video_general_results), pd.DataFrame(video_comments_results), video_with_comments
 

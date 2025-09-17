@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 
 def calculate_total_and_divergence_score(group):
     """
@@ -14,6 +15,7 @@ def calculate_total_and_divergence_score(group):
         polarization_score_with_pseudo_count (float): The polarization score of the group (shrinkaged toward zero if the total count of the group is small)
     """
     total_score = group["sentiment_score"].sum()
+    relevance_score = group["relevance_score"].mean()
     std_deviation = group["sentiment_score"].std()
     positive_sum = abs(group.loc[group["sentiment_label"] == 1, "weighted_sentiment_score"].sum())
     negative_sum = abs(group.loc[group["sentiment_label"] == -1, "weighted_sentiment_score"].sum())
@@ -24,9 +26,10 @@ def calculate_total_and_divergence_score(group):
         polarization_score = 4 * (positive_sum / absolute_sum) * (negative_sum / absolute_sum)
     polarization_score_with_pseudo_count = len(group) / (len(group) + 5) * polarization_score
     return pd.Series({
-        "total_score": total_score,
-        "std_deviation": std_deviation,
-        "polarization_score_with_pseudo_count": polarization_score_with_pseudo_count
+        "total_score": total_score * relevance_score,
+        "relevance_score": relevance_score,
+        "std_deviation": std_deviation * math.sqrt(relevance_score),
+        "polarization_score_with_pseudo_count": polarization_score_with_pseudo_count * math.sqrt(relevance_score)
     })
 
 def get_recommendation(df):
@@ -34,7 +37,7 @@ def get_recommendation(df):
     Get video recommendations based on highest total score and most polarized video with highest product score.
     
     Args:
-        df (pandas.DataFrame): DataFrame containing video_id, total_score, polarization_score_with_pseudo_count, and std_deviation columns
+        df (pandas.DataFrame): DataFrame containing video_id, total_score, relevance_score, polarization_score_with_pseudo_count, and std_deviation columns
         
     Returns:
         tuple: (best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation)

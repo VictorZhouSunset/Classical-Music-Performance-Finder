@@ -110,6 +110,36 @@ def is_performance_video(video_title, verbose=False):
             return False
     return True
 
+def video_how_relevant(video_title, search_query, verbose=False):
+    """
+    Check how relevant the video title is to the search query.
+    This method is prone to bias on language.
+    """
+    
+    title_lower = video_title.lower()
+    search_query_lower = search_query.lower()
+    # Split search query into words using space and dot as separators
+    search_words = set(re.split(r'[\s.]+', search_query_lower))
+    title_words = set(re.split(r'[\s.]+', title_lower))
+    
+    # Count how many search words are found in the title
+    matching_words = 0
+    for word in search_words:
+        if word and word in title_words:  # Check if word exists and is not empty
+            matching_words += 1
+    
+    # Calculate relevance score (0 to 1)
+    if len(search_words) == 0:
+        return 1.0  # If no search words, consider it fully relevant
+    
+    relevance_score = matching_words / len(search_words)
+    
+    if verbose:
+        print(f"Video: {video_title[:50]}... | Score: {relevance_score:.2f}")
+    
+    
+    return relevance_score
+
 def save_results_to_csv(dataframe, filename):
     """
     Saves a list of dictionaries to a CSV file with UTF-8 encoding.
