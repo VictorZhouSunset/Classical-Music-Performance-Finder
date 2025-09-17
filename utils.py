@@ -29,6 +29,12 @@ EXCLUDE_WORDS = ["tutorial",
             "how to learn"
 ]
 
+SENTIMENT_MODEL_NAMES = [
+        "nlptown/bert-base-multilingual-uncased-sentiment",
+        "tabularisai/multilingual-sentiment-analysis",
+        "cardiffnlp/twitter-roberta-base-sentiment-latest"
+        ]
+
 SENTIMENT_MAP = {
     'very positive': 'positive',
     'positive': 'positive',
@@ -61,15 +67,20 @@ SENTIMENT_MAP_STARS_SCORE = {
     '1 star': -1
 }
 
-def initialize_youtube_api():
+def initialize_youtube_api(api_key=None):
     """
     Initialize the YouTube API.
     """
-    dotenv.load_dotenv()
-    api_key = os.getenv("YOUTUBE_API_KEY")
+    if api_key is None:
+        dotenv.load_dotenv()
+        api_key = os.getenv("YOUTUBE_API_KEY")
+    else:
+        api_key = api_key
     if not api_key:
         raise ValueError("YOUTUBE_API_KEY is not set in the environment variables")
-    return build("youtube", "v3", developerKey=api_key)
+    youtube = build("youtube", "v3", developerKey=api_key)
+    print(f"YouTube API initialized successfully")
+    return youtube
 
 # ISO 8601 to hh:mm:ss
 def iso_to_hhmmss(iso_time):
@@ -86,7 +97,7 @@ def iso_to_hhmmss(iso_time):
     
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-def is_performance_video(video_title):
+def is_performance_video(video_title, verbose=False):
     """
     Check if the video title is a performance video using the EXCLUDE_WORDS list.
     """
@@ -94,28 +105,27 @@ def is_performance_video(video_title):
     for word in EXCLUDE_WORDS:
         clean_word = word.replace('"', '')
         pattern = r'\b' + re.escape(clean_word) + r'\b'
-        if re.search(pattern, title_lower):
+        if verbose and re.search(pattern, title_lower):
             print(f"Filtered out {video_title} because it contains {clean_word}")
             return False
     return True
 
-def save_results_to_csv(data, filename):
+def save_results_to_csv(dataframe, filename):
     """
     Saves a list of dictionaries to a CSV file with UTF-8 encoding.
     
     Args:
-        data (list): A list of dictionaries to save.
+        dataframe (pandas.DataFrame): A DataFrame to save.
         filename (str): The name of the output CSV file.
         fieldnames (list): A list of strings for the CSV header.
     """
-    if not data:
+    if dataframe.empty:
         print("No data to save.")
         return
     
-    df = pd.DataFrame(data)
-    df.to_csv(filename, index=False, encoding='utf-8-sig')
+    dataframe.to_csv(filename, index=False, encoding='utf-8-sig')
     
-    print(f"Data saved to {filename}, total {len(data)} saved")
+    print(f"Data saved to {filename}, total {len(dataframe)} saved")
 
 def preprocess_text(text):
     """

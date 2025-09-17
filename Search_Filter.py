@@ -1,11 +1,10 @@
-from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from utils import iso_to_hhmmss, initialize_youtube_api, is_performance_video, save_results_to_csv, preprocess_text, detect_language
-from utils import EXCLUDE_WORDS
+import pandas as pd
 
-youtube = initialize_youtube_api()
 
-def get_comments(video_id, num_comments=100):
+
+def get_comments(video_id, youtube, num_comments=100):
     """
     Get the comments for a video.
     """
@@ -29,7 +28,7 @@ def get_comments(video_id, num_comments=100):
         })
     return comments
 
-def search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=None, verbose=False):
+def search_and_filter(search_query, youtube, num_candidates=50, min_duration_in_seconds=None, verbose=False):
     """
     Search for videos on YouTube and filter them based on the search query.
     """
@@ -48,17 +47,19 @@ def search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=N
     search_response = search_request.execute()
 
     # Filter the videos
-    print(f"--- Filtering {num_candidates} videos ---")
+    if verbose:
+        print(f"--- Filtering {num_candidates} videos ---")
     filtered_video_ids = []
     for item in search_response.get("items", []):
         video_id = item["id"]["videoId"]
         video_title = item["snippet"]["title"]
-        if is_performance_video(video_title):
+        if is_performance_video(video_title, verbose=verbose):
             filtered_video_ids.append(video_id)
+
     print(f"--- Filtering done! {len(filtered_video_ids)} videos left after filtering ---")
     if not filtered_video_ids:
         print("--- No videos left after filtering ---")
-        return
+        return None, None, None
 
     # Get the video information
     v_request = youtube.videos().list(
@@ -79,7 +80,7 @@ def search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=N
         duration = iso_to_hhmmss(contentDetails.get('duration', 'PT0S'))
         # Filter out videos that are less than the minimum duration
         duration_in_seconds = int(duration.split(':')[0]) * 3600 + int(duration.split(':')[1]) * 60 + int(duration.split(':')[2])
-        if min_duration_in_seconds and duration_in_seconds < min_duration_in_seconds:
+        if verbose and min_duration_in_seconds and duration_in_seconds < min_duration_in_seconds:
             print(f"Filtered out {snippet.get('title', 'N/A')} because it is less than {min_duration_in_seconds} seconds")
             continue
         video_general_results.append({
@@ -92,18 +93,18 @@ def search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=N
         })
         # Fetch the comments
         try:
-            print(f"Fetching the first 100 comments for {snippet.get('title', 'N/A')}")
-            comments = get_comments(video_id)
+            if verbose:
+                print(f"Fetching the first 100 comments for {snippet.get('title', 'N/A')}")
+            comments = get_comments(video_id, youtube=youtube)
             if comments:
                 video_with_comments += 1
-            print(f"Fetched {len(comments)} comments for {snippet.get('title', 'N/A')}")
+            if verbose:
+                print(f"Fetched {len(comments)} comments for {snippet.get('title', 'N/A')}")
         except HttpError as e:
             if verbose:
                 print(f"Error fetching comments for {snippet.get('title', 'N/A')}: {e}")
-            else:
-                print(f"Error fetching comments for {snippet.get('title', 'N/A')}")
-            if e.resp.status == 403:
-                print(f"Error Details: Maybe the comments of the video are turned off")
+                if e.resp.status == 403:
+                    print(f"Error Details: Maybe the comments of the video are turned off")
             comments = []
         for comment in comments:
             clean_text = preprocess_text(comment["text"])
@@ -117,7 +118,7 @@ def search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=N
                 "language": language,
                 "like_count": comment["like_count"]
             })
-    return video_general_results, video_comments_results, video_with_comments
+    return pd.DataFrame(video_general_results), pd.DataFrame(video_comments_results), video_with_comments
 
 
     
@@ -128,7 +129,8 @@ def main():
     Main workflow for the project.
     """
     search_query = "Mozart Violin Sonata in E minor"
-    video_general_results, video_comments_results, video_with_comments = search_and_filter(search_query, num_candidates=50, min_duration_in_seconds=65)
+    youtube = initialize_youtube_api()
+    video_general_results, video_comments_results, video_with_comments = search_and_filter(search_query, youtube=youtube, num_candidates=50, min_duration_in_seconds=65)
     filename_general = f"{search_query.replace(' ', '_')}_general_results.csv"
     filename_comments = f"{search_query.replace(' ', '_')}_comments_results.csv"
     # save results to csv for both video and comment

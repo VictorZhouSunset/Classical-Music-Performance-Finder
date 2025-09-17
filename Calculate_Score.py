@@ -45,7 +45,7 @@ def get_recommendation(df):
             - most_polarized_std_deviation: standard deviation of the most polarized video
     """
     if df.empty:
-        return None, None
+        return None, None, None, None, None
     
     max_score_idx = df["total_score"].idxmax()
     best_video_id = df.loc[max_score_idx, "video_id"]
@@ -67,13 +67,24 @@ def get_recommendation(df):
     
     return best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation
 
+def get_video_scores(df):
+    """
+    Get the scores of the videos
+    """
+    df["weighted_sentiment_score"] = df["sentiment_label"] * df["sentiment_score"] * df["like_count"]
+    if not df.empty:
+        df_results = df.groupby("video_id").apply(calculate_total_and_divergence_score).reset_index()
+    else:
+        print("No data to calculate scores.")
+        return None
+    return df_results
+
 def main():
     search_query = "Mozart Violin Sonata in E minor"
     input_filename = f"{search_query.replace(' ', '_')}_comments_results_with_sentiment.csv"
     output_filename = f"{search_query.replace(' ', '_')}_comments_results_with_final_scores.csv"
     df = pd.read_csv(input_filename)
-    df["weighted_sentiment_score"] = df["sentiment_label"] * df["sentiment_score"] * df["like_count"]
-    df_results = df.groupby("video_id").apply(calculate_total_and_divergence_score).reset_index()
+    df_results = get_video_scores(df)
     print("\nPreview of the results:")
     print(df_results.head())
     df_results.to_csv(output_filename, index=False, encoding='utf-8-sig')
