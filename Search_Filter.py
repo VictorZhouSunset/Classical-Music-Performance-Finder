@@ -115,6 +115,7 @@ def search_and_filter(search_query, youtube, num_candidates=50, min_duration_in_
             language = detect_language(clean_text)
             video_comments_results.append({
                 "video_id": video_id,
+                "video_title": video_title,
                 "comment_id": comment["comment_id"],
                 "author": comment["author"],
                 "text": comment["text"],

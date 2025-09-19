@@ -32,20 +32,20 @@ class PerformanceAnalyzer:
             print(f"Sentiment analysis models initialized successfully")
         
     
-    def get_recommendations(self, query, verbose=False):
+    def get_performance_recommendations(self, query, num_candidates=50, min_duration_in_seconds=65, verbose=False):
         self.verbose = verbose
         # 1. Search and filter the videos
         video_general_results, video_comments_results, video_with_comments = search_and_filter(
             query,
             youtube=self.youtube,
-            num_candidates=50,
-            min_duration_in_seconds=65, 
+            num_candidates=num_candidates,
+            min_duration_in_seconds=min_duration_in_seconds, 
             verbose=self.verbose
         )
         print(f"Total videos with comments: {video_with_comments}")
         if video_with_comments == 0:
             print("No videos with comments found.")
-            return None, None, None, None, None
+            return None, None, None, None, None, None
         if verbose:
             filename_general = f"{query.replace(' ', '_')}_general_results.csv"
             filename_comments = f"{query.replace(' ', '_')}_comments_results.csv"
@@ -74,11 +74,11 @@ class PerformanceAnalyzer:
             print(f"Results saved to: {filename_video_scores}")
         
         # 4. Get the recommendations
-        best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation = get_recommendation(df_video_scores_results)
+        best_video_id, best_video_title, best_score, best_polarization_score, best_std_deviation, most_polarized_video_id, most_polarized_video_title, most_polarized_score, most_polarized_polarization_score, most_polarized_std_deviation = get_recommendation(df_video_scores_results)
         if verbose:
-            print(f"Best video ID: {best_video_id}, Best score: {best_score}, Most polarized video ID: {most_polarized_video_id}, Most polarized polarization score: {most_polarized_polarization_score}, Most polarized std deviation: {most_polarized_std_deviation}")
+            print(f"Best video ID: {best_video_id}, Best video title: {best_video_title}, Best score: {best_score}, Best polarization score: {best_polarization_score}, Best std deviation: {best_std_deviation}, Most polarized video ID: {most_polarized_video_id}, Most polarized video title: {most_polarized_video_title}, Most polarized video score: {most_polarized_score}, Most polarized polarization score: {most_polarized_polarization_score}, Most polarized std deviation: {most_polarized_std_deviation}")
         
-        return best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation
+        return best_video_id, best_video_title, best_score, best_polarization_score, best_std_deviation, most_polarized_video_id, most_polarized_video_title, most_polarized_score, most_polarized_polarization_score, most_polarized_std_deviation
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -88,6 +88,18 @@ if __name__ == "__main__":
         "query",
         type=str,
         help="The classical music piece you want to search for (e.g. Mozart Violin Sonata in E minor)"
+    )
+    parser.add_argument(
+        "--num_candidates",
+        type=int,
+        default=50,
+        help="The number of candidates to search for"
+    )
+    parser.add_argument(
+        "--min_duration_in_seconds",
+        type=int,
+        default=65,
+        help="The minimum duration of the video in seconds"
     )
     parser.add_argument(
         "--verbose",
@@ -103,15 +115,20 @@ if __name__ == "__main__":
     analyzer = PerformanceAnalyzer(api_key)
     if args.verbose:
         print(f"Verbose mode enabled, will save the intermediate results to csv files")
-    best_video_id, best_score, most_polarized_video_id, most_polarized_polarization_score, most_polarized_std_deviation = analyzer.get_recommendations(args.query, args.verbose)
+    best_video_id, best_video_title, best_score, best_polarization_score, best_std_deviation, most_polarized_video_id, most_polarized_video_title, most_polarized_score, most_polarized_polarization_score, most_polarized_std_deviation = analyzer.get_performance_recommendations(
+        args.query, 
+        args.num_candidates, 
+        args.min_duration_in_seconds, 
+        args.verbose
+    )
     print("\n" + "="*20 + " Results " + "="*20)
     if best_video_id is None:
         print("No recommendations found, please try again with a different query or check the API quota.")
     else:
         print(f"Recommendations with the highest total score:")
-        print(f"Video ID: {best_video_id}, Score: {best_score:.2f}")
+        print(f"Video ID: {best_video_id}, Video title: {best_video_title}, Score: {best_score:.2f}")
         print(f"Video URL: https://www.youtube.com/watch?v={best_video_id}\n")
         print(f"Recommendations with the most polarized version:")
-        print(f"Video ID: {most_polarized_video_id}, Polarization score: {most_polarized_polarization_score:.2f}, Std deviation: {most_polarized_std_deviation:.2f}")
+        print(f"Video ID: {most_polarized_video_id}, Video title: {most_polarized_video_title}, Score: {most_polarized_score:.2f}, Polarization score: {most_polarized_polarization_score:.2f}, Std deviation: {most_polarized_std_deviation:.2f}")
         print(f"Video URL: https://www.youtube.com/watch?v={most_polarized_video_id}")
     print("\n" + "="*52)

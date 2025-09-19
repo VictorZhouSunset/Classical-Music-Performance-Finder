@@ -136,6 +136,8 @@ When using `--verbose` mode, the system generates several CSV files:
 
 ⚠️ **Current Limitation**: The filtering system sometimes allows highly-ranked performances of pieces that are not related to the intended search query to survive the filter process and appear in the candidate list. These unrelated but trending videos may beat other valid candidates due to their popularity and appear in the recommendations. I am actively working on improving the filtering methods to address this issue.
 
+⚠️ **Solo Performance Bias**: For solo performances, amateur music enthusiasts often post their attemps and improvement progress on YouTube. These videos may have substantial fan bases that leave encouraging comments, potentially causing them to rank higher in the current algorithm despite not being professional performances. This bias is less prevalent in symphonies and concertos, which are typically performed by established orchestras and professional musicians.
+
 ## Contributing
 
 We welcome contributions to improve the filtering accuracy and recommendation quality. Areas for improvement include:

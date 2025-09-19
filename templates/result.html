@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Search in Progress...</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <h1>Classical Music Performance Finder</h1>
+            <p>Searching for: <strong>{{ query }}</strong></p>
+            
+            <div class="info-note">
+                <p><strong>💡 Note:</strong> Symphonies and concertos tend to have more reliable results than solo performances, as amateur enthusiasts' solo performances are likely to get a lot of encouraging comments which will get them higher scores.</p>
+            </div>
+            
+            <div class="status-container">
+                <div id="status">Status: Task is starting...</div>
+                <div id="result"></div>
+            </div>
+            
+            <a href="/" class="back-link">← Back to Home</a>
+            
+            <div class="disclaimer">
+                <p><em>This project is intended for learning and experimental purposes. The analysis results are based solely on publicly available YouTube data and automated sentiment analysis, and may contain inaccuracies. They are provided for reference only.</em></p>
+            </div>
+        </div>
+
+        <script>
+            const taskId = "{{ task_id }}";
+            const query = "{{ query }}";
+            const numCandidates = "{{ num_candidates }}";
+            const minDurationInSeconds = "{{ min_duration_in_seconds }}";
+
+            function checkStatus() {
+                fetch(`/status/${taskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('status').innerHTML = `<span class="loading">Status: ${data.status}</span>`;
+
+                        if (data.state == 'SUCCESS') {
+                            document.title = `Completed: ${query}`;
+
+                            const result = data.result;
+                            document.getElementById('status').innerHTML = "<h2 class='success'>✓ Search Complete!</h2>";
+                            document.getElementById('result').innerHTML = `
+                                <div class="performance-card">
+                                    <h3>🎯 Most Recommended Performance</h3>
+                                    <ul>
+                                        <li><strong>Video:</strong> <a href="https://www.youtube.com/watch?v=${result[0]}" target="_blank">Watch on YouTube</a></li>
+                                        <li><strong>Title:</strong> ${result[1]}</li>
+                                        <li><strong>Weighted Score:</strong> ${result[2].toFixed(2)}</li>
+                                        <li><strong>Polarization Score:</strong> ${result[3].toFixed(2)}</li>
+                                        <li><strong>Std Deviation:</strong> ${result[4].toFixed(2)}</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="performance-card">
+                                    <h3>⚡ Most Polarized Performance</h3>
+                                    <ul>
+                                        <li><strong>Video:</strong> <a href="https://www.youtube.com/watch?v=${result[5]}" target="_blank">Watch on YouTube</a></li>
+                                        <li><strong>Title:</strong> ${result[6]}</li>
+                                        <li><strong>Weighted Score:</strong> ${result[7].toFixed(2)}</li>
+                                        <li><strong>Polarization Score:</strong> ${result[8].toFixed(2)}</li>
+                                        <li><strong>Std Deviation:</strong> ${result[9].toFixed(2)}</li>
+                                    </ul>
+                                </div>
+                            `;
+                        } else if (data.state == 'FAILURE') {
+                            document.title = `Failed: ${query}`;
+                            document.getElementById('status').innerHTML = "<h2 class='error'>✗ Search Failed!</h2>";
+                            document.getElementById('result').innerHTML = `<p class='error'>Task failed with error: ${data.status}</p>`;
+                        } else {
+                            setTimeout(checkStatus, 3000);
+                        }
+                    })
+                    .catch(error => {
+                        document.title = `Failed: ${query}`;
+                        document.getElementById('status').innerHTML = "<h2 class='error'>✗ Connection Error</h2>";
+                        document.getElementById('result').innerHTML = `<p class='error'>Error checking status: ${error}</p>`;
+                    });
+            }
+
+            document.title = `Search in Progress: ${query}`;
+            window.onload = checkStatus;
+        </script>
+    </body>
+</html>
