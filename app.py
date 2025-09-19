@@ -12,14 +12,18 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 
 load_dotenv()
 API_KEY = os.getenv("YOUTUBE_API_KEY")
+REDIS_URL = os.getenv("REDIS_URL")
+
 
 app = Flask(__name__)
 
 # 新建一个celery应用实例（可包含多个worker）
 celery = Celery(
     app.name,
-    broker='redis://localhost:6379/0',
-    backend='redis://localhost:6379/0'
+    # broker='redis://localhost:6379/0',
+    # backend='redis://localhost:6379/0'
+    broker=REDIS_URL,
+    backend=REDIS_URL
 )
 celery.conf.task_track_started = True
 
