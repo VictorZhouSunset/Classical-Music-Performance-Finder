@@ -2,7 +2,9 @@ from flask import Flask, render_template, request, jsonify, url_for
 from celery import Celery
 import os
 from dotenv import load_dotenv
+print("Loaded environment variables")
 from Performance_Analyzer import PerformanceAnalyzer
+print("Loaded Performance Analyzer")
 from bs4 import MarkupResemblesLocatorWarning
 import warnings
 import logging
